@@ -4,6 +4,7 @@ import com.solidarix.backend.dto.AuthRequestDto;
 import com.solidarix.backend.dto.AuthResponseDto;
 import com.solidarix.backend.dto.RegistrationDto;
 import com.solidarix.backend.service.AuthService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,13 +21,14 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public AuthResponseDto register(@RequestBody RegistrationDto request){
-        return authService.register(request);
+    public ResponseEntity<AuthResponseDto> register(@RequestBody RegistrationDto request){
+        System.out.println("Mandalo controleur");
+        return ResponseEntity.ok(authService.register(request));
     }
 
     @PostMapping("/login")
-    public AuthResponseDto authenticate(@RequestBody AuthRequestDto request){
-        return authService.authenticate(request);
+    public ResponseEntity<AuthResponseDto> authenticate(@RequestBody AuthRequestDto request){
+        return ResponseEntity.ok(authService.authenticate(request));
     }
 
 }

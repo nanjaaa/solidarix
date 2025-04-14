@@ -4,6 +4,7 @@ import com.solidarix.backend.model.User;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,7 +30,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authManager) throws Exception{
-        http.csrf(AbstractHttpConfigurer::disable)
+        http
+                // on mets à défaut comme ça Spring se charge de faire la configuration en utilisant le bean qu'on lui a créé (CorsConfig)
+                // une autre option est d'injecter une objet CorsConfigurationSource dans cette classe et l(utiliser dans la configuration cors de securityfilterchain
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests( authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/h2-console/**","/auth/**").permitAll()

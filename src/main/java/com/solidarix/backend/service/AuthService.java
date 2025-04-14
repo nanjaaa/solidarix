@@ -45,6 +45,8 @@ public class AuthService {
         user.setAddress(address);
         userRepository.save(user);
 
+        System.out.println("Mandalo service");
+
         // Générer le token
         String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
         return new AuthResponseDto(token);
