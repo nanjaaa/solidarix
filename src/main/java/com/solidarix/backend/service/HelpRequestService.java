@@ -41,4 +41,11 @@ public class HelpRequestService {
         return helpRequest;
     }
 
+    public HelpRequest findById(Long helpRequestId){
+
+        return helpRequestRepository.findById(helpRequestId)
+                .orElseThrow(() -> new RuntimeException("Help request not found"));
+
+    }
+
 }
