@@ -29,12 +29,7 @@ public class HelpRequestController {
             , @AuthenticationPrincipal CustomUserDetails userDetails){
 
         User user = userDetails.getUser();
-        System.out.println("mandalo controleur 1 - user : "+user.getUsername());
-        HelpRequest helpRequest = helpRequestService.createHelpRequest(
-                user, helpRequestDto.getCategory(), helpRequestDto.getFullAddress()
-                , helpRequestDto.getHelpDate(), helpRequestDto.getDescription()
-        );
-        System.out.println("mandalo controleur 2");
+        HelpRequest helpRequest = helpRequestService.createHelpRequest(user, helpRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(helpRequest);
     }
 

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "help_requests")
@@ -37,5 +38,7 @@ public class HelpRequest {
     private String description;
 
     //ajouter des commentaires plus tard
+    @OneToMany(mappedBy = "helpRequest", cascade = CascadeType.ALL)
+    private List<HelpRequestComment> comments;
 
 }

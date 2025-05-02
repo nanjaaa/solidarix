@@ -1,5 +1,6 @@
 package com.solidarix.backend.service;
 
+import com.solidarix.backend.dto.HelpRequestDto;
 import com.solidarix.backend.model.*;
 import com.solidarix.backend.repository.HelpRequestRepository;
 import com.solidarix.backend.repository.UserRepository;
@@ -20,25 +21,24 @@ public class HelpRequestService {
         this.locationService = locationService;
     }
 
-    public HelpRequest createHelpRequest(User user, String category, String fullAddress, LocalDateTime helpDate, String description){
+    public HelpRequest createHelpRequest(User creator, HelpRequestDto helpRequestDto){
 
-        Location location = locationService.findOrCreateLocation(fullAddress);
+        Location location = locationService.findOrCreateLocation(helpRequestDto.getFullAddress());
 
-        if (user == null || location == null) {
+        if (creator == null || location == null) {
             throw new IllegalArgumentException("L'utilisateur ou la localisation ne peut être nul");
         }
 
         HelpRequest helpRequest = new HelpRequest();
-        helpRequest.setRequester(user);
-        helpRequest.setCategory(HelpCategory.valueOf(category));
+        helpRequest.setRequester(creator);
+        helpRequest.setCategory(HelpCategory.valueOf(helpRequestDto.getCategory()));
         helpRequest.setLocation(location);
-        helpRequest.setHelpDate(helpDate);
+        helpRequest.setHelpDate(helpRequestDto.getHelpDate());
         helpRequest.setCreatedAt(LocalDateTime.now());
         helpRequest.setStatus(HelpStatus.EN_ATTENTE);
-        helpRequest.setDescription(description);
-        helpRequestRepository.save(helpRequest);
+        helpRequest.setDescription(helpRequestDto.getDescription());
 
-        return helpRequest;
+        return helpRequestRepository.save(helpRequest);
     }
 
     public HelpRequest findById(Long helpRequestId){
