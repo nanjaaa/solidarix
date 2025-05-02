@@ -49,7 +49,7 @@ public class AuthService {
 
         // Générer le token
         String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
-        return new AuthResponseDto(token);
+        return new AuthResponseDto(token, user);
     }
 
     public AuthResponseDto authenticate(AuthRequestDto request){
@@ -62,7 +62,7 @@ public class AuthService {
         }
 
         String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
-        return new AuthResponseDto(token);
+        return new AuthResponseDto(token, user);
     }
 
 }
