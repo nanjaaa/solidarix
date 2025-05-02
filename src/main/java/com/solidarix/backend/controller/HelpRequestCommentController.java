@@ -27,35 +27,15 @@ public class HelpRequestCommentController {
         this.helpRequestService = helpRequestService;
     }
 
-    @PostMapping("/create")
+    @PostMapping("/add")
     public ResponseEntity<HelpRequestComment> createComment(
             @RequestBody HelpRequestCommentDto commentDto
             , @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         User user = userDetails.getUser();
-        HelpRequest helpRequest = helpRequestService.findById(commentDto.getHelpRequestId());
-
-        HelpRequestComment comment = commentService.addComment(
-                user, helpRequest, null, commentDto.getContent()
-        );
+        HelpRequestComment comment = commentService.addComment(user, commentDto);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(comment);
     }
 
-    @PostMapping("/reply")
-    public ResponseEntity<HelpRequestComment> replyToComment(
-            @RequestBody HelpRequestCommentDto commentDto
-            , @AuthenticationPrincipal CustomUserDetails userDetails){
-
-        User user = userDetails.getUser();
-
-        HelpRequest helpRequest = helpRequestService.findById(commentDto.getHelpRequestId());
-        HelpRequestComment parentComment = commentService.findById(commentDto.getParentCommentId());
-
-        HelpRequestComment reply = commentService.replyToComment(
-                user, helpRequest, parentComment, commentDto.getContent()
-        );
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(reply);
-    }
 }
