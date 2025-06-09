@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests( authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers("/h2-console/**","/auth/**").permitAll()
-                                .requestMatchers("/help-request/create").hasRole("USER")
+                                .requestMatchers("/**").hasRole("USER")
                                 .anyRequest().authenticated()
                 )
                 .headers(Headers -> Headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))

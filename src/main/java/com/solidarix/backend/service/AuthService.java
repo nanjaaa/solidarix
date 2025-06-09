@@ -32,11 +32,12 @@ public class AuthService {
     public AuthResponseDto register(RegistrationDto request){
 
         // Trouver un adresse ou créer un nouveau
-        Location address = locationService.findOrCreateLocation(request.getFullAddress());
+        Location address = locationService.findOrCreateLocation(request.getAddress());
 
         // Construire le User
         User user = new User();
         user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -44,8 +45,6 @@ public class AuthService {
         user.setRole(Role.ROLE_USER);
         user.setAddress(address);
         userRepository.save(user);
-
-        System.out.println("Mandalo service");
 
         // Générer le token
         String token = jwtService.generateToken(user.getUsername(), user.getRole().name());

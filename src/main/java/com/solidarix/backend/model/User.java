@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 @Entity
 @Table(name = "users")
@@ -26,6 +27,8 @@ public class User {
     private String password;
     private String firstName;
     private String lastName;
+    private String email;
+
 
     private LocalDate birthday;
 
@@ -51,6 +54,16 @@ public class User {
         return Collections.singletonList(new SimpleGrantedAuthority(role.name()));
     }
 
+    public boolean equals(User anotherUser){
 
+        if(this == anotherUser) return true;
+        if (this.getClass() != anotherUser.getClass()) return false;
+        return this.id != null && this.id.equals(anotherUser.getId());
+    }
+
+    @Override
+    public int hashCode(){
+        return Objects.hash(this.id);
+    }
 
 }

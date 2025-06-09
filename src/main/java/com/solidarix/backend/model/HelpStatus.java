@@ -1,8 +1,8 @@
 package com.solidarix.backend.model;
 
 public enum HelpStatus {
-    EN_ATTENTE,
-    EN_DISCUSSION,
-    VALIDE,
-    TERMINEE
+    WAITING_FOR_PROPOSAL,
+    IN_DISCUSSION,
+    CONFIRMED,
+    DONE
 }

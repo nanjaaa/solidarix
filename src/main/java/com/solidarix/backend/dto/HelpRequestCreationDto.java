@@ -7,13 +7,13 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class HelpRequestDto {
+public class HelpRequestCreationDto {
 
     @NotBlank(message = "La catégorie est obligatoire")
     private String category;
 
     @NotBlank(message = "L'adresse est obligatoire")
-    private String fullAddress;
+    private LocationDto address;
 
     @NotBlank(message = "La date est obligatoire")
     @Future(message = "La date de l'aide doit être ultérieure")

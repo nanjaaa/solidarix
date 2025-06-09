@@ -33,7 +33,7 @@ public class AddressApiService {
             JSONObject geometry = features.getJSONObject(0).getJSONObject("geometry");
 
             location.setFullAddress(properties.getString("label"));
-            location.setNumber(Integer.parseInt(properties.optString("houseNumber", "1")));
+            location.setNumber(properties.optString("houseNumber", "1"));
             location.setStreetName(properties.optString("street", ""));
             location.setPostalCode(properties.optString("postcode", ""));
             location.setCity(properties.optString("city", ""));

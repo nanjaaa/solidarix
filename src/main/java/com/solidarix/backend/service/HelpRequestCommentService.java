@@ -1,6 +1,6 @@
 package com.solidarix.backend.service;
 
-import com.solidarix.backend.dto.HelpRequestCommentDto;
+import com.solidarix.backend.dto.HelpRequestCommentCreationDto;
 import com.solidarix.backend.model.HelpRequest;
 import com.solidarix.backend.model.HelpRequestComment;
 import com.solidarix.backend.model.User;
@@ -25,7 +25,7 @@ public class HelpRequestCommentService {
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
     }
 
-    public HelpRequestComment addComment(User author, HelpRequestCommentDto commentDto){
+    public HelpRequestComment addComment(User author, HelpRequestCommentCreationDto commentDto){
 
         HelpRequest helpRequest = helpRequestService.findById(commentDto.getHelpRequestId());
         HelpRequestComment comment = new HelpRequestComment();

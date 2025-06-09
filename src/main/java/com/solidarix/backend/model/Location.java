@@ -16,10 +16,9 @@ public class Location {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(unique = true)
     private String fullAddress;
 
-    private Integer number;
+    private String number;
     private String streetName;
     private String postalCode;
     private String city;

@@ -1,5 +1,6 @@
 package com.solidarix.backend.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
@@ -12,6 +13,10 @@ public class RegistrationDto {
 
     @NotBlank(message = "Le nom d'utilisateur est obliagtoire")
     private String username;
+
+    @NotBlank(message = "L'adresse mail est obligatoire")
+    @Email
+    private String email;
 
     @NotBlank(message = "Le mot de passe est obliagtoire")
     @Size(min = 6, message = "Le mot de passe doit contenir au mions 6 caractères")
@@ -26,7 +31,6 @@ public class RegistrationDto {
     @Past(message = "La date de naissance doit être dans le passé")
     private LocalDate birthday; // mettre au format yyyy-MM-dd
 
-    @NotBlank(message = "L'adresse est obligatoire")
-    private String fullAddress; // utilisé pour appeler l'API adresse
+    private LocationDto address;
 
 }
