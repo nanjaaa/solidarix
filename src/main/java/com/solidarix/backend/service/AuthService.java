@@ -47,7 +47,7 @@ public class AuthService {
         userRepository.save(user);
 
         // Générer le token
-        String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
+        String token = jwtService.generateToken(user);
         return new AuthResponseDto(token, user);
     }
 
@@ -60,7 +60,7 @@ public class AuthService {
             throw new RuntimeException("Incorrect password");
         }
 
-        String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
+        String token = jwtService.generateToken(user);
         return new AuthResponseDto(token, user);
     }
 

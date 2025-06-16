@@ -2,7 +2,8 @@ package com.solidarix.backend.controller;
 
 import com.solidarix.backend.dto.HelpOfferCancellationDto;
 import com.solidarix.backend.dto.HelpOfferCreationDto;
-import com.solidarix.backend.dto.HelpOfferMessageDto;
+import com.solidarix.backend.dto.HelpOfferDto;
+import com.solidarix.backend.dto.HelpOfferMessageCreationDto;
 import com.solidarix.backend.model.HelpOffer;
 import com.solidarix.backend.model.HelpOfferMessage;
 import com.solidarix.backend.model.User;
@@ -13,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/help-offer")
@@ -25,6 +28,15 @@ public class HelpOfferController {
         this.helpOfferService = helpOfferService;
     }
 
+    @GetMapping("/{helpOfferId}")
+    public ResponseEntity<HelpOfferDto> getHelpOfferDiscussion(
+            @PathVariable Long helpOfferId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+            ){
+        User currentUser = userDetails.getUser();
+        HelpOfferDto discussionDto = helpOfferService.getDiscussionById(helpOfferId, currentUser);
+        return ResponseEntity.ok(discussionDto);
+    }
 
     @PostMapping("/create")
     public ResponseEntity<HelpOffer> createHelpOffer(
@@ -41,14 +53,26 @@ public class HelpOfferController {
 
     @PostMapping("/send-message")
     public ResponseEntity<HelpOfferMessage> addMessageToHelpOffer(
-            @RequestBody HelpOfferMessageDto helpOfferMessageDto
+            @RequestBody HelpOfferMessageCreationDto helpOfferMessageCreationDto
             , @AuthenticationPrincipal CustomUserDetails userDetails
             ){
 
         User sender = userDetails.getUser();
 
-        HelpOfferMessage message = helpOfferService.addMessageToHelpOffer(sender, helpOfferMessageDto);
+        HelpOfferMessage message = helpOfferService.addMessageToHelpOffer(sender, helpOfferMessageCreationDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(message);
+    }
+
+
+    @GetMapping("/my-discussions")
+    public ResponseEntity<List<HelpOfferDto>> getMyDiscussions(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+            ){
+
+        User user = userDetails.getUser();
+        List<HelpOfferDto> discussions = helpOfferService.getDiscussionsForUser(user);
+
+        return ResponseEntity.ok(discussions);
     }
 
 
@@ -73,30 +97,18 @@ public class HelpOfferController {
         return ResponseEntity.ok(confirmedHelpOffer);
     }
 
-
-    @PostMapping("/{helpOfferId}/cancel-by-requester")
-    public ResponseEntity<HelpOffer> cancelByRequester(
+    //public HelpOffer cancelDependingOnUser(User user, Long helpOfferId, HelpOfferCancellationDto dto) {
+    @PostMapping("/{helpOfferId}/cancel")
+    public ResponseEntity<HelpOffer> cancelHelpOffer(
             @PathVariable Long helpOfferId
             , @Valid @RequestBody HelpOfferCancellationDto cancellationDto
             , @AuthenticationPrincipal CustomUserDetails userDetails
-            ){
+    ){
         User canceler = userDetails.getUser();
-        HelpOffer canceledHelpOffer = helpOfferService.cancelByRequester(canceler, helpOfferId, cancellationDto);
-        return ResponseEntity.ok(canceledHelpOffer);
+        HelpOffer cancelledHelpOffer = helpOfferService.cancelDependingOnUser(canceler, helpOfferId, cancellationDto);
+
+        return ResponseEntity.ok(cancelledHelpOffer);
     }
-
-
-    @PostMapping("/{helpOfferId}/cancel-by-helper")
-    public ResponseEntity<HelpOffer> cancelByHelper(
-            @PathVariable Long helpOfferId
-            , @Valid @RequestBody HelpOfferCancellationDto cancellationDto
-            , @AuthenticationPrincipal CustomUserDetails userDetails
-            ){
-        User canceler = userDetails.getUser();
-        HelpOffer canceledHelpOffer = helpOfferService.cancelByHelper(canceler, helpOfferId, cancellationDto);
-        return ResponseEntity.ok(canceledHelpOffer);
-    }
-
 
     @PostMapping("/{helpOfferId}/mark-as-done")
     public ResponseEntity<HelpOffer> markAsDone(

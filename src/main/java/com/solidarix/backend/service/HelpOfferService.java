@@ -2,14 +2,18 @@ package com.solidarix.backend.service;
 
 import com.solidarix.backend.dto.HelpOfferCancellationDto;
 import com.solidarix.backend.dto.HelpOfferCreationDto;
-import com.solidarix.backend.dto.HelpOfferMessageDto;
+import com.solidarix.backend.dto.HelpOfferDto;
+import com.solidarix.backend.dto.HelpOfferMessageCreationDto;
 import com.solidarix.backend.model.*;
 import com.solidarix.backend.repository.HelpOfferMessageRepository;
 import com.solidarix.backend.repository.HelpOfferRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class HelpOfferService {
@@ -64,10 +68,10 @@ public class HelpOfferService {
     }
 
 
-    public HelpOfferMessage addMessageToHelpOffer(User sender, HelpOfferMessageDto helpOfferMessageDto) {
+    public HelpOfferMessage addMessageToHelpOffer(User sender, HelpOfferMessageCreationDto helpOfferMessageCreationDto) {
 
-        String messageContent = helpOfferMessageDto.getMessage();
-        HelpOffer helpOffer = helpOfferRepository.findById(helpOfferMessageDto.getHelpOfferId())
+        String messageContent = helpOfferMessageCreationDto.getMessage();
+        HelpOffer helpOffer = helpOfferRepository.findById(helpOfferMessageCreationDto.getHelpOfferId())
                 .orElseThrow(() -> new RuntimeException("Help Offer not found"));
 
         HelpOfferMessage message = new HelpOfferMessage();
@@ -78,6 +82,47 @@ public class HelpOfferService {
 
         return messageRepository.save(message);
     }
+
+    // Pour récupérer les discussions concernant un helpOffer
+    public HelpOfferDto getDiscussion(HelpOffer helpOffer, User discussionViewer) {
+
+        // S'il celui qui fait la requête pour voir la discussion sur un helpOffer est le requester
+        //  -> il aura un dto PRIVATE du helpRequest, sinon il aura un dto public
+        if (discussionViewer.equals(helpOffer.getHelpRequest().getRequester())){
+            return HelpOfferDto.fromHelpOfferEntityToMyOwnHelpRequest(helpOffer);
+        }
+        return HelpOfferDto.fromHelpOfferEntityToOthersHelpRequest(helpOffer);
+    }
+
+    public HelpOfferDto getDiscussionById(Long helpOfferId, User currentUser) {
+
+        HelpOffer helpOffer = helpOfferRepository.findById(helpOfferId)
+                .orElseThrow(() -> new RuntimeException("Help Offer not found"));
+
+        // Vérifie que l'utilisateur est concerné
+        boolean isRequester = helpOffer.getHelpRequest().getRequester().getId().equals(currentUser.getId());
+        boolean isHelper = helpOffer.getHelper().getId().equals(currentUser.getId());
+
+        if (!isRequester && !isHelper) {
+            throw new RuntimeException("Vous n'avez pas accès à cette discussion");
+        }
+        return HelpOfferDto.fromHelpOfferEntityToMyOwnHelpRequest(helpOffer);
+    }
+
+
+    // cette méthode renvoie la liste de toutes les discussions sur un helpOffer où un user prends part
+    public List<HelpOfferDto> getDiscussionsForUser (User user){
+
+        List<HelpOfferDto> discussionsDto = new ArrayList<>();
+
+        List<HelpOffer> helpOffers = helpOfferRepository.findAllByUserInvolved(user.getId());
+        for (HelpOffer ho : helpOffers){
+            discussionsDto.add(this.getDiscussion(ho, user));
+        }
+
+        return discussionsDto;
+    }
+
 
     // Le demandeur d'aide valide une proposition d'aide
     public HelpOffer validateByRequester(User requester, Long helpOfferId) {
@@ -137,7 +182,7 @@ public class HelpOfferService {
 
 
     @Transactional
-    public HelpOffer cancelByRequester(User requester, Long helpOfferId, HelpOfferCancellationDto cancellationDto) {
+    private HelpOffer cancelByRequester(User requester, Long helpOfferId, HelpOfferCancellationDto cancellationDto) {
 
         String reason = cancellationDto.getJustification();
         HelpOffer helpOffer = helpOfferRepository.findById(helpOfferId)
@@ -179,7 +224,7 @@ public class HelpOfferService {
 
 
     @Transactional
-    public HelpOffer cancelByHelper(User helper, Long helpOfferId, HelpOfferCancellationDto cancellationDto) {
+    private HelpOffer cancelByHelper(User helper, Long helpOfferId, HelpOfferCancellationDto cancellationDto) {
 
         String reason = cancellationDto.getJustification();
         HelpOffer helpOffer = helpOfferRepository.findById(helpOfferId)
@@ -218,6 +263,22 @@ public class HelpOfferService {
         helpOffer.setCanceledAt(LocalDateTime.now());
         return helpOfferRepository.save(helpOffer);
     }
+
+
+    @Transactional
+    public HelpOffer cancelDependingOnUser(User user, Long helpOfferId, HelpOfferCancellationDto dto) {
+        HelpOffer helpOffer = helpOfferRepository.findById(helpOfferId)
+                .orElseThrow(() -> new RuntimeException("Help Offer not found"));
+
+        if (user.equals(helpOffer.getHelpRequest().getRequester())) {
+            return cancelByRequester(user, helpOfferId, dto);
+        } else if (user.equals(helpOffer.getHelper())) {
+            return cancelByHelper(user, helpOfferId, dto);
+        } else {
+            throw new RuntimeException("User is neither the requester nor the helper of this offer.");
+        }
+    }
+
 
 
     @Transactional

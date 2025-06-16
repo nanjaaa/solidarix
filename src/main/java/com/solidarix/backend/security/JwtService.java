@@ -1,6 +1,7 @@
 package com.solidarix.backend.security;
 
 import com.solidarix.backend.config.JwtProperties;
+import com.solidarix.backend.model.User;
 import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -25,15 +26,18 @@ public class JwtService {
 
 
     // Générer un JWT pour un utilisateur
-    public String generateToken(String username, String role){
+    public String generateToken(User user){
         Key hmacKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
 
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role);
+        claims.put("role", user.getRole());
+        claims.put("userId", user.getId());
+        claims.put("firstName", user.getFirstName());
+        claims.put("lastName", user.getLastName());
 
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(username)
+                .setSubject(user.getUsername())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
                 .signWith(hmacKey, SignatureAlgorithm.HS512)

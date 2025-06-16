@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity @Data
@@ -38,6 +39,9 @@ public class HelpOffer {
     private LocalDateTime canceledAt;
 
     private LocalDateTime closedAt;
+
+    @OneToMany(mappedBy = "helpOffer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HelpOfferMessage> messages = new ArrayList<>();
 
     @OneToMany(mappedBy = "helpOffer")
     private List<HelpIncidentReport> incidentReports;
