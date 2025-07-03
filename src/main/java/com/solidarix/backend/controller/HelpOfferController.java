@@ -46,8 +46,18 @@ public class HelpOfferController {
 
         User helper = userDetails.getUser();
 
-        HelpOffer helpOffer = helpOfferService.createHelpOffer(helper, helpOfferCreationDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(helpOffer);
+        try {
+            HelpOffer helpOffer = helpOfferService.createHelpOffer(helper, helpOfferCreationDto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(helpOffer); //OK 200
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build(); //Error 409
+        }
+    }
+
+    @PostMapping("/message/{messageId}/mark-seen")
+    public ResponseEntity<Void> markMessageAsSeen(@PathVariable Long messageId) {
+        helpOfferService.markAsSeen(messageId);
+        return ResponseEntity.ok().build();
     }
 
 

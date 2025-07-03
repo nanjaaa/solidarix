@@ -15,6 +15,7 @@ import java.util.List;
 @Repository
 public interface HelpOfferRepository extends JpaRepository<HelpOffer, Long> {
 
+    // Vérifie s'il existe un HelpOffer tel que l'aideur est helper et le HelpRequest correspondant est helpRequest
     boolean existsByHelperAndHelpRequest(User helper, HelpRequest helpRequest);
 
     @Query("""
@@ -25,4 +26,7 @@ public interface HelpOfferRepository extends JpaRepository<HelpOffer, Long> {
     List<HelpOffer> findAllByUserInvolved(@Param("userId") Long userId);
 
     List<HelpOffer> findByStatusInAndExpirationReferenceBefore(List<HelpOfferStatus> proposed, LocalDateTime threshold);
+
+    // Trouve la liste de HelpOffer dont le help_request_id est helpRequestId
+    List<HelpOffer> findByHelpRequestId(Long helpRequestId);
 }

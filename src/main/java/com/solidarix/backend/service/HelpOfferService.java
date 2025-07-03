@@ -7,6 +7,7 @@ import com.solidarix.backend.dto.HelpOfferMessageCreationDto;
 import com.solidarix.backend.model.*;
 import com.solidarix.backend.repository.HelpOfferMessageRepository;
 import com.solidarix.backend.repository.HelpOfferRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,10 @@ public class HelpOfferService {
         // Quand un HelpOffer se crée, il y a un premier message qui l'accompagne
 
         HelpRequest helpRequest = helpRequestService.findById(helpOfferCreationDto.getHelpRequestId());
+        if (!helpRequestService.canAcceptHelpOffer(helpRequest)) {
+            throw new IllegalStateException("Cette demande d'aide n'accepte plus de propositions.");
+        }
+
         String firstMessageContent = helpOfferCreationDto.getFirstMessage();
         // setting help offer
         HelpOffer helpOffer = new HelpOffer();
@@ -60,6 +65,8 @@ public class HelpOfferService {
         helpOfferRepository.save(helpOffer);
         messageRepository.save(message);
         helpRequestService.save(helpRequest);
+
+        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOffer;
     }
 
@@ -67,6 +74,42 @@ public class HelpOfferService {
         return helpOfferRepository.existsByHelperAndHelpRequest(user, request);
     }
 
+    private List<HelpOffer> getHelpOffersForRequest(HelpRequest helpRequest) {
+        return helpOfferRepository.findByHelpRequestId(helpRequest.getId());
+    }
+
+    private List<HelpOfferStatus> extractAllHelpOfferStatus(HelpRequest helpRequest) {
+
+        List<HelpOffer> helpOffers = this.getHelpOffersForRequest(helpRequest);
+        return helpOffers.stream()
+                .map(HelpOffer::getStatus)
+                .toList();
+    }
+
+    // Si on a des status annulé, expiré, échoué de HelpOffer, on tient compte des autres status et s'il n'y en a pas d'autres on mets WAITING_FOR_PROPOSAL
+    private HelpStatus getActualHelpStatus(HelpRequest helpRequest){
+
+        List<HelpOfferStatus> allHelpOfferStatus = this.extractAllHelpOfferStatus(helpRequest);
+
+        if(allHelpOfferStatus.contains(HelpOfferStatus.DONE)){
+            return HelpStatus.DONE;
+        }
+        else if(allHelpOfferStatus.contains(HelpOfferStatus.CONFIRMED_BY_HELPER)){
+            return HelpStatus.CONFIRMED;
+        }
+        else if(allHelpOfferStatus.contains(HelpOfferStatus.PROPOSED)
+                || allHelpOfferStatus.contains(HelpOfferStatus.VALIDATED_BY_REQUESTER)){
+            return HelpStatus.IN_DISCUSSION;
+        }
+
+        return HelpStatus.WAITING_FOR_PROPOSAL;
+    }
+
+    private void actualizeHelpRequestStatus(HelpRequest helpRequest){
+        HelpStatus actualHelpStatus = this.getActualHelpStatus(helpRequest);
+        helpRequest.setStatus(actualHelpStatus);
+        helpRequestService.save(helpRequest);
+    }
 
     public HelpOfferMessage addMessageToHelpOffer(User sender, HelpOfferMessageCreationDto helpOfferMessageCreationDto) {
 
@@ -81,6 +124,16 @@ public class HelpOfferService {
         message.setSentAt(LocalDateTime.now());
 
         return messageRepository.save(message);
+    }
+
+    public void markAsSeen(Long messageId) {
+        HelpOfferMessage message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new EntityNotFoundException("Message not found with id: " + messageId));
+
+        if (message.getSeenAt() == null) {
+            message.setSeenAt(LocalDateTime.now());
+            messageRepository.save(message);
+        }
     }
 
     // Pour récupérer les discussions concernant un helpOffer
@@ -147,6 +200,8 @@ public class HelpOfferService {
 
         helpOffer.setStatus(HelpOfferStatus.VALIDATED_BY_REQUESTER);
         helpOffer.setExpirationReference(LocalDateTime.now());
+
+        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 
@@ -177,6 +232,8 @@ public class HelpOfferService {
 
         helpOffer.setStatus(HelpOfferStatus.CONFIRMED_BY_HELPER);
         helpOffer.setExpirationReference(null);
+
+        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 
@@ -219,6 +276,8 @@ public class HelpOfferService {
         helpOffer.setStatus(HelpOfferStatus.CANCELED_BY_REQUESTER);
         helpOffer.setCancellationJustification(reason);
         helpOffer.setCanceledAt(LocalDateTime.now());
+
+        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 
@@ -261,6 +320,8 @@ public class HelpOfferService {
         helpOffer.setStatus(HelpOfferStatus.CANCELED_BY_HELPER);
         helpOffer.setCancellationJustification(reason);
         helpOffer.setCanceledAt(LocalDateTime.now());
+
+        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 
@@ -303,6 +364,8 @@ public class HelpOfferService {
 
         helpOffer.setStatus(HelpOfferStatus.DONE);
         helpOffer.setClosedAt(LocalDateTime.now());
+
+        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 
@@ -330,6 +393,8 @@ public class HelpOfferService {
 
         helpOffer.setStatus(HelpOfferStatus.FAILED);
         helpOffer.setClosedAt(LocalDateTime.now());
+
+        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 

@@ -80,6 +80,10 @@ public class HelpRequestService {
                 .toList();
     }
 
+    public boolean canAcceptHelpOffer(HelpRequest helpRequest){
+        return List.of(HelpStatus.WAITING_FOR_PROPOSAL, HelpStatus.IN_DISCUSSION).contains(helpRequest.getStatus());
+    }
+
 
     /*
     public List<?> getFeedForUser(User currentUser) {
