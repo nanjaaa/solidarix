@@ -14,8 +14,8 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class HelpOfferMessageDto extends MessageDto {
 
-    public HelpOfferMessageDto(Long id, UserSimpleDto sender, String content, LocalDateTime createdAt) {
-        super(id, sender, content, createdAt, null, true, false, false); // only isAboutHelpOffer=true
+    public HelpOfferMessageDto(Long id, UserSimpleDto sender, String content, LocalDateTime createdAt, boolean isReadByReceiver) {
+        super(id, sender, content, createdAt, isReadByReceiver, true, false, false); // only isAboutHelpOffer=true
     }
 
     public static HelpOfferMessageDto fromEntity(HelpOfferMessage message) {
@@ -23,9 +23,9 @@ public class HelpOfferMessageDto extends MessageDto {
                 message.getId(),
                 UserSimpleDto.fromEntity(message.getSender()),
                 message.getMessage(),
-                message.getSentAt()
+                message.getSentAt(),
+                message.isReadByReceiver()
         );
-        dto.setSeenAt(message.getSeenAt());
         return dto;
     }
 

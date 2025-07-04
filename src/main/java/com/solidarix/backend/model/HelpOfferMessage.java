@@ -27,7 +27,8 @@ public class HelpOfferMessage {
     private String message;
 
     private LocalDateTime sentAt;
-    private LocalDateTime seenAt;
+
+    private boolean readByReceiver = false;
 
     public User getReceiver(){
         return (sender.equals(helpOffer.getHelper()))

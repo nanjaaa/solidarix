@@ -11,4 +11,7 @@ public interface HelpOfferMessageRepository extends JpaRepository<HelpOfferMessa
 
     List<HelpOfferMessage> findByHelpOfferIdOrderBySentAtDesc(Long helpOfferId);
 
+    List<HelpOfferMessage> findByHelpOfferId(Long helpOfferId);
 }
+
+

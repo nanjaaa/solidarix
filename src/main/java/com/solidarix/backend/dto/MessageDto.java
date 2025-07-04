@@ -14,7 +14,7 @@ public class MessageDto {
     private UserSimpleDto sender;
     private String content;
     private LocalDateTime createdAt;
-    private LocalDateTime seenAt; // null si non lu
+    private boolean isReadByReceiver; // null si non lu
 
     // Flag pour les différents types de message
     private Boolean isAboutHelpOffer;

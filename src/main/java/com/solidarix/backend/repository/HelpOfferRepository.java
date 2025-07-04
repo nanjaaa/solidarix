@@ -29,4 +29,7 @@ public interface HelpOfferRepository extends JpaRepository<HelpOffer, Long> {
 
     // Trouve la liste de HelpOffer dont le help_request_id est helpRequestId
     List<HelpOffer> findByHelpRequestId(Long helpRequestId);
+
+    List<HelpOffer> findByStatusNotInAndHelpRequestHelpDateLessThanEqual(List<HelpOfferStatus> done, LocalDateTime now);
 }
+

@@ -20,12 +20,12 @@ import java.util.List;
 public class HelpOfferService {
 
     private final HelpOfferRepository helpOfferRepository;
-    private final HelpOfferMessageRepository messageRepository;
+    private final HelpOfferMessageService messageService;
     public final HelpRequestService helpRequestService;
 
-    public HelpOfferService(HelpOfferRepository helpOfferRepository, HelpOfferMessageRepository messageRepository, HelpRequestService helpRequestService) {
+    public HelpOfferService(HelpOfferRepository helpOfferRepository, HelpOfferMessageService messageService, HelpRequestService helpRequestService) {
         this.helpOfferRepository = helpOfferRepository;
-        this.messageRepository = messageRepository;
+        this.messageService = messageService;
         this.helpRequestService = helpRequestService;
     }
 
@@ -51,22 +51,18 @@ public class HelpOfferService {
         helpOffer.setCreatedAt(LocalDateTime.now());
         helpOffer.setExpirationReference(LocalDateTime.now());
         helpOffer.setStatus(HelpOfferStatus.PROPOSED);
+        helpOfferRepository.save(helpOffer);
 
-        // setting th first message
-        HelpOfferMessage message = new HelpOfferMessage();
-        message.setHelpOffer(helpOffer);
-        message.setSender(helper);
-        message.setMessage(firstMessageContent);
-        message.setSentAt(LocalDateTime.now());
+        // setting the first message
+        HelpOfferMessageCreationDto messageDto = new HelpOfferMessageCreationDto();
+        messageDto.setHelpOfferId(helpOffer.getId());
+        messageDto.setMessage(helpOfferCreationDto.getFirstMessage());
+        messageService.addMessageToHelpOffer(helper, messageDto);
 
         // Update Help Request Status
-        helpRequest.setStatus(HelpStatus.IN_DISCUSSION);
-
-        helpOfferRepository.save(helpOffer);
-        messageRepository.save(message);
+        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         helpRequestService.save(helpRequest);
 
-        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOffer;
     }
 
@@ -109,31 +105,6 @@ public class HelpOfferService {
         HelpStatus actualHelpStatus = this.getActualHelpStatus(helpRequest);
         helpRequest.setStatus(actualHelpStatus);
         helpRequestService.save(helpRequest);
-    }
-
-    public HelpOfferMessage addMessageToHelpOffer(User sender, HelpOfferMessageCreationDto helpOfferMessageCreationDto) {
-
-        String messageContent = helpOfferMessageCreationDto.getMessage();
-        HelpOffer helpOffer = helpOfferRepository.findById(helpOfferMessageCreationDto.getHelpOfferId())
-                .orElseThrow(() -> new RuntimeException("Help Offer not found"));
-
-        HelpOfferMessage message = new HelpOfferMessage();
-        message.setHelpOffer(helpOffer);
-        message.setSender(sender);
-        message.setMessage(messageContent);
-        message.setSentAt(LocalDateTime.now());
-
-        return messageRepository.save(message);
-    }
-
-    public void markAsSeen(Long messageId) {
-        HelpOfferMessage message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new EntityNotFoundException("Message not found with id: " + messageId));
-
-        if (message.getSeenAt() == null) {
-            message.setSeenAt(LocalDateTime.now());
-            messageRepository.save(message);
-        }
     }
 
     // Pour récupérer les discussions concernant un helpOffer

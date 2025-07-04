@@ -8,6 +8,7 @@ import com.solidarix.backend.model.HelpOffer;
 import com.solidarix.backend.model.HelpOfferMessage;
 import com.solidarix.backend.model.User;
 import com.solidarix.backend.security.CustomUserDetails;
+import com.solidarix.backend.service.HelpOfferMessageService;
 import com.solidarix.backend.service.HelpOfferService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -22,10 +23,12 @@ import java.util.List;
 public class HelpOfferController {
 
     private final HelpOfferService helpOfferService;
+    private final HelpOfferMessageService helpOfferMessageService;
 
 
-    public HelpOfferController(HelpOfferService helpOfferService) {
+    public HelpOfferController(HelpOfferService helpOfferService, HelpOfferMessageService helpOfferMessageService) {
         this.helpOfferService = helpOfferService;
+        this.helpOfferMessageService = helpOfferMessageService;
     }
 
     @GetMapping("/{helpOfferId}")
@@ -54,13 +57,8 @@ public class HelpOfferController {
         }
     }
 
-    @PostMapping("/message/{messageId}/mark-seen")
-    public ResponseEntity<Void> markMessageAsSeen(@PathVariable Long messageId) {
-        helpOfferService.markAsSeen(messageId);
-        return ResponseEntity.ok().build();
-    }
 
-
+    /*
     @PostMapping("/send-message")
     public ResponseEntity<HelpOfferMessage> addMessageToHelpOffer(
             @RequestBody HelpOfferMessageCreationDto helpOfferMessageCreationDto
@@ -69,11 +67,15 @@ public class HelpOfferController {
 
         User sender = userDetails.getUser();
 
-        HelpOfferMessage message = helpOfferService.addMessageToHelpOffer(sender, helpOfferMessageCreationDto);
+        HelpOfferMessage message = helpOfferMessageService.addMessageToHelpOffer(sender, helpOfferMessageCreationDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(message);
     }
+    */
 
-
+    /*
+    * Pour l'instant ce contrôleur ne renvoie que les discussions sur les HelpOffers,
+    * plus tard il y aura aussi les discussions privées, sur des événements ....
+     */
     @GetMapping("/my-discussions")
     public ResponseEntity<List<HelpOfferDto>> getMyDiscussions(
             @AuthenticationPrincipal CustomUserDetails userDetails
