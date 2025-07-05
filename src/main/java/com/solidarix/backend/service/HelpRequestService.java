@@ -85,6 +85,7 @@ public class HelpRequestService {
     }
 
 
+
     /*
     public List<?> getFeedForUser(User currentUser) {
         List<HelpRequest> requests = helpRequestRepository.;

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -27,56 +28,42 @@ public class HelpOfferDto {
     private String cancellationJustification;
     private List<HelpOfferMessageDto> messages;
 
-    public HelpOfferDto(
-            Long helpOffer_id, HelpRequest help_request, User offerer,
-            LocalDateTime created_at, LocalDateTime expiration_reference, String status,
-            LocalDateTime closed_at, LocalDateTime canceled_at, String cancellation_justification,
-            List<HelpOfferMessage> messages) {
-
-        this.helpOfferId                  = helpOffer_id;
-        this.helpRequest                  = PrivateHelpRequestDto.fromEntity(help_request);
-        this.offerer                       = UserSimpleDto.fromEntity(offerer);
-        this.createdAt                    = created_at;
-        this.expirationReference          = expiration_reference;
-        this.status                        = status;
-        this.closedAt                     = closed_at;
-        this.canceledAt                   = canceled_at;
-        this.cancellationJustification    = cancellation_justification;
-        this.messages = messages.stream()
-                .map(HelpOfferMessageDto::fromEntity)
-                .toList();
-    }
-
-    public static HelpOfferDto fromHelpOfferEntityToMyOwnHelpRequest(HelpOffer helpOffer){
+    public static HelpOfferDto fromHelpOfferEntityWithPrivateHelpRequest(HelpOffer helpOffer){
+        List<HelpOfferMessageDto> messageDtos = new ArrayList<>();
+        for(HelpOfferMessage m : helpOffer.getMessages()){
+            messageDtos.add(HelpOfferMessageDto.fromEntity(m));
+        }
         return new HelpOfferDto(
                 helpOffer.getId(),
-                helpOffer.getHelpRequest(),
-                helpOffer.getHelper(),
+                PrivateHelpRequestDto.fromEntity(helpOffer.getHelpRequest()),
+                UserSimpleDto.fromEntity(helpOffer.getHelper()),
                 helpOffer.getCreatedAt(),
                 helpOffer.getExpirationReference(),
                 helpOffer.getStatus().name(),
                 helpOffer.getClosedAt(),
                 helpOffer.getCanceledAt(),
                 helpOffer.getCancellationJustification(),
-                helpOffer.getMessages()
+                messageDtos
         );
     }
 
-    public static HelpOfferDto fromHelpOfferEntityToOthersHelpRequest(HelpOffer helpOffer){
-        HelpOfferDto dto = new HelpOfferDto(
+    public static HelpOfferDto fromHelpOfferEntityWithPublicHelpRequest(HelpOffer helpOffer){
+        List<HelpOfferMessageDto> messageDtos = new ArrayList<>();
+        for(HelpOfferMessage m : helpOffer.getMessages()){
+            messageDtos.add(HelpOfferMessageDto.fromEntity(m));
+        }
+        return new HelpOfferDto(
                 helpOffer.getId(),
-                helpOffer.getHelpRequest(),
-                helpOffer.getHelper(),
+                PublicHelpRequestDto.fromEntity(helpOffer.getHelpRequest()),
+                UserSimpleDto.fromEntity(helpOffer.getHelper()),
                 helpOffer.getCreatedAt(),
                 helpOffer.getExpirationReference(),
                 helpOffer.getStatus().name(),
                 helpOffer.getClosedAt(),
                 helpOffer.getCanceledAt(),
                 helpOffer.getCancellationJustification(),
-                helpOffer.getMessages()
+                messageDtos
         );
-        dto.setHelpRequest((PublicHelpRequestDto)dto.getHelpRequest());
-        return dto;
     }
 
 }

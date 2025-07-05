@@ -111,11 +111,18 @@ public class HelpOfferService {
     public HelpOfferDto getDiscussion(HelpOffer helpOffer, User discussionViewer) {
 
         // S'il celui qui fait la requête pour voir la discussion sur un helpOffer est le requester
+        // ou bien si celui qui veut voir la discussion est le proposeur d'aide et que le statut de l'aide est cCONFIRMED ou DONE ou FAILED
         //  -> il aura un dto PRIVATE du helpRequest, sinon il aura un dto public
-        if (discussionViewer.equals(helpOffer.getHelpRequest().getRequester())){
-            return HelpOfferDto.fromHelpOfferEntityToMyOwnHelpRequest(helpOffer);
+        if (
+                discussionViewer.equals(helpOffer.getHelpRequest().getRequester())
+                || (
+                        discussionViewer.equals(helpOffer.getHelper())
+                        && List.of(HelpOfferStatus.CONFIRMED_BY_HELPER, HelpOfferStatus.DONE, HelpOfferStatus.FAILED).contains(helpOffer.getStatus())
+                    )
+            ){
+            return HelpOfferDto.fromHelpOfferEntityWithPrivateHelpRequest(helpOffer);
         }
-        return HelpOfferDto.fromHelpOfferEntityToOthersHelpRequest(helpOffer);
+        return HelpOfferDto.fromHelpOfferEntityWithPublicHelpRequest(helpOffer);
     }
 
     public HelpOfferDto getDiscussionById(Long helpOfferId, User currentUser) {
@@ -123,17 +130,11 @@ public class HelpOfferService {
         HelpOffer helpOffer = helpOfferRepository.findById(helpOfferId)
                 .orElseThrow(() -> new RuntimeException("Help Offer not found"));
 
-        // Vérifie que l'utilisateur est concerné
-        boolean isRequester = helpOffer.getHelpRequest().getRequester().getId().equals(currentUser.getId());
-        boolean isHelper = helpOffer.getHelper().getId().equals(currentUser.getId());
-
-        if (!isRequester && !isHelper) {
-            throw new RuntimeException("Vous n'avez pas accès à cette discussion");
-        }
-        return HelpOfferDto.fromHelpOfferEntityToMyOwnHelpRequest(helpOffer);
+        return this.getDiscussion(helpOffer, currentUser);
     }
 
 
+    /**
     // cette méthode renvoie la liste de toutes les discussions sur un helpOffer où un user prends part
     public List<HelpOfferDto> getDiscussionsForUser (User user){
 
@@ -141,6 +142,35 @@ public class HelpOfferService {
 
         List<HelpOffer> helpOffers = helpOfferRepository.findAllByUserInvolved(user.getId());
         for (HelpOffer ho : helpOffers){
+            discussionsDto.add(this.getDiscussion(ho, user));
+        }
+
+        return discussionsDto;
+    }
+     */
+
+    public List<HelpOfferDto> getDiscussionsForUser(User user) {
+
+        List<HelpOffer> helpOffers = helpOfferRepository.findAllByUserInvolved(user.getId());
+
+        // On trie la liste avant de mapper
+        helpOffers.sort((ho1, ho2) -> {
+            LocalDateTime lastSentAt1 = ho1.getMessages().stream()
+                    .map(HelpOfferMessage::getSentAt)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(LocalDateTime.MIN);
+
+            LocalDateTime lastSentAt2 = ho2.getMessages().stream()
+                    .map(HelpOfferMessage::getSentAt)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(LocalDateTime.MIN);
+
+            // Pour ordre antéchronologique (le plus récent en premier), on inverse la comparaison
+            return lastSentAt2.compareTo(lastSentAt1);
+        });
+
+        List<HelpOfferDto> discussionsDto = new ArrayList<>();
+        for (HelpOffer ho : helpOffers) {
             discussionsDto.add(this.getDiscussion(ho, user));
         }
 
