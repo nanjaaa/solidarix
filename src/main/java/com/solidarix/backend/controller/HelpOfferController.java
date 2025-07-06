@@ -1,9 +1,6 @@
 package com.solidarix.backend.controller;
 
-import com.solidarix.backend.dto.HelpOfferCancellationDto;
-import com.solidarix.backend.dto.HelpOfferCreationDto;
-import com.solidarix.backend.dto.HelpOfferDto;
-import com.solidarix.backend.dto.HelpOfferMessageCreationDto;
+import com.solidarix.backend.dto.*;
 import com.solidarix.backend.model.HelpOffer;
 import com.solidarix.backend.model.HelpOfferMessage;
 import com.solidarix.backend.model.User;
@@ -123,12 +120,46 @@ public class HelpOfferController {
     }
 
     @PostMapping("/{helpOfferId}/mark-as-done")
-    public ResponseEntity<HelpOffer> markAsDone(
+    public ResponseEntity<HelpOfferDto> markAsDone(
             @PathVariable Long helpOfferId
+            , @RequestBody HelpFeedbackCreationDto feedBackDto
             , @AuthenticationPrincipal CustomUserDetails userDetails
             ){
         User requester = userDetails.getUser();
-        HelpOffer closedOffer = helpOfferService.markAsDone(requester, helpOfferId);
+        HelpOfferDto closedOffer = helpOfferService.markAsDone(requester, helpOfferId, feedBackDto);
+        return ResponseEntity.ok(closedOffer);
+    }
+
+    @PostMapping("/{helpOfferId}/add-feedback")
+    public ResponseEntity<HelpOfferDto> addFeedback(
+            @PathVariable Long helpOfferId
+            , @RequestBody HelpFeedbackCreationDto feedBackDto
+            , @AuthenticationPrincipal CustomUserDetails userDetails
+    ){
+        User helper = userDetails.getUser();
+        HelpOfferDto closedOffer = helpOfferService.addHelperFeedback(helper, helpOfferId, feedBackDto);
+        return ResponseEntity.ok(closedOffer);
+    }
+
+    @PostMapping("/{helpOfferId}/mark-as-failed")
+    public ResponseEntity<HelpOfferDto> markAsFailed(
+            @PathVariable Long helpOfferId
+            , @RequestBody HelpIncidentReportCreationDto incidentReportDto
+            , @AuthenticationPrincipal CustomUserDetails userDetails
+    ){
+        User reporter = userDetails.getUser();
+        HelpOfferDto closedOffer = helpOfferService.markAsFailed(reporter, helpOfferId, incidentReportDto);
+        return ResponseEntity.ok(closedOffer);
+    }
+
+    @PostMapping("/{helpOfferId}/report-incident")
+    public ResponseEntity<HelpOfferDto> reportIncident(
+            @PathVariable Long helpOfferId
+            , @RequestBody HelpIncidentReportCreationDto incidentReportDto
+            , @AuthenticationPrincipal CustomUserDetails userDetails
+    ){
+        User reporter = userDetails.getUser();
+        HelpOfferDto closedOffer = helpOfferService.reportIncident(reporter, helpOfferId, incidentReportDto);
         return ResponseEntity.ok(closedOffer);
     }
 

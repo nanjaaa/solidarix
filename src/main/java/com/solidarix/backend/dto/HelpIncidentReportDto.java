@@ -1,23 +1,37 @@
 package com.solidarix.backend.dto;
 
-
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import com.solidarix.backend.model.HelpIncidentReport;
+import com.solidarix.backend.model.User;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.springframework.web.multipart.MultipartFile;
+import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class HelpIncidentReportDto {
 
-    @NotBlank(message = "La description de l'incident est obligatoire")
-    @Size(max = 1000, message = "La description en doit pas dépasser 1000 caractères")
+    private Long id;
+    private HelpOfferDto helpOffer;
+    private UserSimpleDto reporter;
     private String description;
+    private LocalDateTime createdAt;
 
-    @NotBlank(message = "La catégorie de l'incident doit être précisée")
-    private String category;
+    // Ajouter les fichiers joints
 
-    private List<MultipartFile> attachments;
+    // Constructeur à partir de l'entité
+    public static HelpIncidentReportDto fromEntity(HelpIncidentReport report, User reporter) {
 
+        HelpIncidentReportDto reportDto = new HelpIncidentReportDto();
+        reportDto.id = report.getId();
+        reportDto.helpOffer = HelpOfferDto.fromHelpOfferEntityWithPrivateHelpRequest(report.getHelpOffer(), reporter);
+        reportDto.reporter = UserSimpleDto.fromEntity(report.getReporter());
+        reportDto.description = report.getDescription();
+        reportDto.createdAt = report.getCreatedAt();
+
+        return reportDto;
+    }
 }
+

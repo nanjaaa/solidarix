@@ -18,7 +18,7 @@ public class HelpOffer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "helpRequest_id")
     private  HelpRequest helpRequest;
 
@@ -43,7 +43,10 @@ public class HelpOffer {
     @OneToMany(mappedBy = "helpOffer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HelpOfferMessage> messages = new ArrayList<>();
 
-    @OneToMany(mappedBy = "helpOffer")
+    @OneToMany(mappedBy = "helpOffer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HelpFeedback> feedbacks;
+
+    @OneToMany(mappedBy = "helpOffer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HelpIncidentReport> incidentReports;
 
     public boolean isExpired(){
@@ -51,6 +54,16 @@ public class HelpOffer {
             return Duration.between(expirationReference, LocalDateTime.now()).toHours() >= 24;
         }
         return this.status == HelpOfferStatus.EXPIRED;
+    }
+
+    public void addFeedback(HelpFeedback feedback){
+        feedbacks.add(feedback);
+        feedback.setHelpOffer(this);
+    }
+
+    public void addIncidentReport(HelpIncidentReport report){
+        incidentReports.add(report);
+        report.setHelpOffer(this);
     }
 
 }

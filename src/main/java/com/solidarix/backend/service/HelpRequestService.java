@@ -84,7 +84,38 @@ public class HelpRequestService {
         return List.of(HelpStatus.WAITING_FOR_PROPOSAL, HelpStatus.IN_DISCUSSION).contains(helpRequest.getStatus());
     }
 
+    private List<HelpOfferStatus> extractAllHelpOfferStatus(HelpRequest helpRequest) {
 
+        List<HelpOffer> helpOffers = helpRequest.getHelpOffers();
+        return helpOffers.stream()
+                .map(HelpOffer::getStatus)
+                .toList();
+    }
+
+    // Si on a des status annulé, expiré, échoué de HelpOffer, on tient compte des autres status et s'il n'y en a pas d'autres on mets WAITING_FOR_PROPOSAL
+    private HelpStatus getActualHelpStatus(HelpRequest helpRequest){
+
+        List<HelpOfferStatus> allHelpOfferStatus = this.extractAllHelpOfferStatus(helpRequest);
+
+        if(allHelpOfferStatus.contains(HelpOfferStatus.DONE)){
+            return HelpStatus.DONE;
+        }
+        else if(allHelpOfferStatus.contains(HelpOfferStatus.CONFIRMED_BY_HELPER)){
+            return HelpStatus.CONFIRMED;
+        }
+        else if(allHelpOfferStatus.contains(HelpOfferStatus.PROPOSED)
+                || allHelpOfferStatus.contains(HelpOfferStatus.VALIDATED_BY_REQUESTER)){
+            return HelpStatus.IN_DISCUSSION;
+        }
+
+        return HelpStatus.WAITING_FOR_PROPOSAL;
+    }
+
+    public void actualizeHelpRequestStatus(HelpRequest helpRequest){
+        HelpStatus actualHelpStatus = this.getActualHelpStatus(helpRequest);
+        helpRequest.setStatus(actualHelpStatus);
+        helpRequestRepository.save(helpRequest);
+    }
 
     /*
     public List<?> getFeedForUser(User currentUser) {

@@ -1,7 +1,10 @@
 package com.solidarix.backend.controller;
 
+import com.solidarix.backend.dto.HelpFeedbackDto;
+import com.solidarix.backend.dto.HelpIncidentReportCreationDto;
 import com.solidarix.backend.dto.HelpIncidentReportDto;
 import com.solidarix.backend.model.HelpIncidentReport;
+import com.solidarix.backend.model.IncidentType;
 import com.solidarix.backend.model.User;
 import com.solidarix.backend.security.CustomUserDetails;
 import com.solidarix.backend.service.HelpIncidentReportService;
@@ -11,8 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/report/{offerId}")
+@RequestMapping("/reports")
 public class HelpIncidentReportController {
 
     private final HelpIncidentReportService incidentReportService;
@@ -21,15 +26,14 @@ public class HelpIncidentReportController {
         this.incidentReportService = incidentReportService;
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<HelpIncidentReport> createIncdentReport(
-            @PathVariable Long offerId
-            , @AuthenticationPrincipal CustomUserDetails userDetails
-            , @Valid @ModelAttribute HelpIncidentReportDto incidentReportDto) {
-
-        User reporter = userDetails.getUser();
-        HelpIncidentReport incidentReport = incidentReportService.createIncidentHelpReport(reporter, offerId, incidentReportDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(incidentReport);
+    // Lister tous les feedbacks d'une HelpOffer
+    @GetMapping("/offer/{helpOfferId}")
+    public ResponseEntity<List<HelpIncidentReportDto>> getFeedbacksForOffer(
+            @PathVariable Long helpOfferId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        List<HelpIncidentReportDto> reports = incidentReportService.getIncidentReportsForHelpOffer(helpOfferId, userDetails.getUser());
+        return ResponseEntity.ok(reports);
     }
 
 }

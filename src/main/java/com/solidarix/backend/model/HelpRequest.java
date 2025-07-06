@@ -2,6 +2,7 @@ package com.solidarix.backend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.action.internal.OrphanRemovalAction;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,8 +38,11 @@ public class HelpRequest {
     @Column(length = 1000)
     private String description;
 
-    //ajouter des commentaires plus tard
     @OneToMany(mappedBy = "helpRequest", cascade = CascadeType.ALL)
     private List<HelpRequestComment> comments;
+
+    //ajouter des commentaires plus tard
+    @OneToMany(mappedBy = "helpRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HelpOffer> helpOffers;
 
 }

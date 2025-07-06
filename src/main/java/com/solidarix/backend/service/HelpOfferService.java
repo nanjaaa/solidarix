@@ -1,15 +1,9 @@
 package com.solidarix.backend.service;
 
-import com.solidarix.backend.dto.HelpOfferCancellationDto;
-import com.solidarix.backend.dto.HelpOfferCreationDto;
-import com.solidarix.backend.dto.HelpOfferDto;
-import com.solidarix.backend.dto.HelpOfferMessageCreationDto;
+import com.solidarix.backend.dto.*;
 import com.solidarix.backend.model.*;
-import com.solidarix.backend.repository.HelpOfferMessageRepository;
 import com.solidarix.backend.repository.HelpOfferRepository;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,9 +23,14 @@ public class HelpOfferService {
         this.helpRequestService = helpRequestService;
     }
 
+
     public HelpOffer findById(Long id) {
         return helpOfferRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Help Offer not found"));
+    }
+
+    public HelpOffer save(HelpOffer helpOffer){
+        return helpOfferRepository.save(helpOffer);
     }
 
     @Transactional
@@ -60,7 +59,7 @@ public class HelpOfferService {
         messageService.addMessageToHelpOffer(helper, messageDto);
 
         // Update Help Request Status
-        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
+        helpRequestService.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         helpRequestService.save(helpRequest);
 
         return helpOffer;
@@ -74,38 +73,6 @@ public class HelpOfferService {
         return helpOfferRepository.findByHelpRequestId(helpRequest.getId());
     }
 
-    private List<HelpOfferStatus> extractAllHelpOfferStatus(HelpRequest helpRequest) {
-
-        List<HelpOffer> helpOffers = this.getHelpOffersForRequest(helpRequest);
-        return helpOffers.stream()
-                .map(HelpOffer::getStatus)
-                .toList();
-    }
-
-    // Si on a des status annulé, expiré, échoué de HelpOffer, on tient compte des autres status et s'il n'y en a pas d'autres on mets WAITING_FOR_PROPOSAL
-    private HelpStatus getActualHelpStatus(HelpRequest helpRequest){
-
-        List<HelpOfferStatus> allHelpOfferStatus = this.extractAllHelpOfferStatus(helpRequest);
-
-        if(allHelpOfferStatus.contains(HelpOfferStatus.DONE)){
-            return HelpStatus.DONE;
-        }
-        else if(allHelpOfferStatus.contains(HelpOfferStatus.CONFIRMED_BY_HELPER)){
-            return HelpStatus.CONFIRMED;
-        }
-        else if(allHelpOfferStatus.contains(HelpOfferStatus.PROPOSED)
-                || allHelpOfferStatus.contains(HelpOfferStatus.VALIDATED_BY_REQUESTER)){
-            return HelpStatus.IN_DISCUSSION;
-        }
-
-        return HelpStatus.WAITING_FOR_PROPOSAL;
-    }
-
-    private void actualizeHelpRequestStatus(HelpRequest helpRequest){
-        HelpStatus actualHelpStatus = this.getActualHelpStatus(helpRequest);
-        helpRequest.setStatus(actualHelpStatus);
-        helpRequestService.save(helpRequest);
-    }
 
     // Pour récupérer les discussions concernant un helpOffer
     public HelpOfferDto getDiscussion(HelpOffer helpOffer, User discussionViewer) {
@@ -120,9 +87,9 @@ public class HelpOfferService {
                         && List.of(HelpOfferStatus.CONFIRMED_BY_HELPER, HelpOfferStatus.DONE, HelpOfferStatus.FAILED).contains(helpOffer.getStatus())
                     )
             ){
-            return HelpOfferDto.fromHelpOfferEntityWithPrivateHelpRequest(helpOffer);
+            return HelpOfferDto.fromHelpOfferEntityWithPrivateHelpRequest(helpOffer, discussionViewer);
         }
-        return HelpOfferDto.fromHelpOfferEntityWithPublicHelpRequest(helpOffer);
+        return HelpOfferDto.fromHelpOfferEntityWithPublicHelpRequest(helpOffer, discussionViewer);
     }
 
     public HelpOfferDto getDiscussionById(Long helpOfferId, User currentUser) {
@@ -202,7 +169,7 @@ public class HelpOfferService {
         helpOffer.setStatus(HelpOfferStatus.VALIDATED_BY_REQUESTER);
         helpOffer.setExpirationReference(LocalDateTime.now());
 
-        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
+        helpRequestService.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 
@@ -234,7 +201,7 @@ public class HelpOfferService {
         helpOffer.setStatus(HelpOfferStatus.CONFIRMED_BY_HELPER);
         helpOffer.setExpirationReference(null);
 
-        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
+        helpRequestService.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 
@@ -271,14 +238,11 @@ public class HelpOfferService {
             default -> throw new RuntimeException("Help offer is not in a state that allows cancellation.");
         }
 
-        helpOffer.getHelpRequest().setStatus(HelpStatus.WAITING_FOR_PROPOSAL);
-        helpRequestService.save(helpOffer.getHelpRequest());
-
         helpOffer.setStatus(HelpOfferStatus.CANCELED_BY_REQUESTER);
         helpOffer.setCancellationJustification(reason);
         helpOffer.setCanceledAt(LocalDateTime.now());
 
-        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
+        helpRequestService.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 
@@ -315,14 +279,11 @@ public class HelpOfferService {
             default -> throw new RuntimeException("Help offer is not in a state that allows cancellation.");
         }
 
-        helpOffer.getHelpRequest().setStatus(HelpStatus.WAITING_FOR_PROPOSAL);
-        helpRequestService.save(helpOffer.getHelpRequest());
-
         helpOffer.setStatus(HelpOfferStatus.CANCELED_BY_HELPER);
         helpOffer.setCancellationJustification(reason);
         helpOffer.setCanceledAt(LocalDateTime.now());
 
-        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
+        helpRequestService.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
         return helpOfferRepository.save(helpOffer);
     }
 
@@ -341,10 +302,8 @@ public class HelpOfferService {
         }
     }
 
-
-
     @Transactional
-    public HelpOffer markAsDone(User requester, Long helpOfferId) {
+    public HelpOfferDto markAsDone(User requester, Long helpOfferId, HelpFeedbackCreationDto feedbackDto) {
 
         HelpOffer helpOffer = helpOfferRepository.findById(helpOfferId)
                 .orElseThrow(() -> new RuntimeException("Help Offer not found"));
@@ -359,20 +318,59 @@ public class HelpOfferService {
         }
 
         // Ajouter l'avis après entraide et le système de score
+        HelpFeedback feedback = new HelpFeedback();
+        feedback.setHelpOffer(helpOffer);
+        feedback.setAuthor(requester);
+        feedback.setFeedback(feedbackDto.getFeedback());
+        feedback.setCreatedAt(LocalDateTime.now());
 
-        helpOffer.getHelpRequest().setStatus(HelpStatus.DONE);
-        helpRequestService.save(helpOffer.getHelpRequest());
 
         helpOffer.setStatus(HelpOfferStatus.DONE);
         helpOffer.setClosedAt(LocalDateTime.now());
+        helpOffer.addFeedback(feedback);
 
-        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
-        return helpOfferRepository.save(helpOffer);
+        helpRequestService.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
+        helpOfferRepository.save(helpOffer);
+
+        return HelpOfferDto.fromHelpOfferEntityWithPrivateHelpRequest(helpOffer, requester);
+    }
+
+    public HelpOfferDto addHelperFeedback(User helper, Long helpOfferId, HelpFeedbackCreationDto feedBackDto) {
+
+        HelpOffer helpOffer = helpOfferRepository.findById(helpOfferId)
+                .orElseThrow(() -> new RuntimeException("Help Offer not found"));
+
+        // Vérifier si celui qui veut clôturer l'entraide est bien l'aideur
+        if (!helper.equals(helpOffer.getHelper())) {
+            throw new RuntimeException("Only helper can mark help request as DONE.");
+        }
+
+        // Vérifier que l'utilisateur n'as pas déjà fait un signalement, 1 signalement max par user
+        for (HelpFeedback feedback : helpOffer.getFeedbacks()){
+            if(helper.equals(feedback.getAuthor())){
+                throw new RuntimeException("User already have submitted a feedback");
+            }
+        }
+
+        if (!helpOffer.getStatus().equals(HelpOfferStatus.DONE)) {
+            throw new RuntimeException("Only validated by requester and confirmed by helper requests can be marked as DONE.");
+        }
+
+        HelpFeedback feedback = new HelpFeedback();
+        feedback.setHelpOffer(helpOffer);
+        feedback.setAuthor(helper);
+        feedback.setFeedback(feedBackDto.getFeedback());
+        feedback.setCreatedAt(LocalDateTime.now());
+
+        helpOffer.addFeedback(feedback);
+        helpOfferRepository.save(helpOffer);
+
+        return HelpOfferDto.fromHelpOfferEntityWithPrivateHelpRequest(helpOffer, helper);
     }
 
 
     @Transactional
-    public HelpOffer markAsFailed(User user, Long helpOfferId){
+    public HelpOfferDto markAsFailed(User user, Long helpOfferId, HelpIncidentReportCreationDto incidentReportCreationDto){
 
         HelpOffer helpOffer = helpOfferRepository.findById(helpOfferId)
                 .orElseThrow(() -> new RuntimeException("Help Offer not found"));
@@ -389,14 +387,62 @@ public class HelpOfferService {
             throw new RuntimeException("Only validated by requester and confirmed by helper requests can be marked as FAILED.");
         }
 
-        helpOffer.getHelpRequest().setStatus(HelpStatus.WAITING_FOR_PROPOSAL);
-        helpRequestService.save(helpOffer.getHelpRequest());
+        HelpIncidentReport report = new HelpIncidentReport();
+        report.setHelpOffer(helpOffer);
+        report.setType(IncidentType.valueOf(incidentReportCreationDto.getType()));
+        report.setReporter(user);
+        report.setDescription(incidentReportCreationDto.getDescription());
+        report.setCreatedAt(LocalDateTime.now());
 
         helpOffer.setStatus(HelpOfferStatus.FAILED);
         helpOffer.setClosedAt(LocalDateTime.now());
+        helpOffer.addIncidentReport(report);
 
-        this.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
-        return helpOfferRepository.save(helpOffer);
+        helpRequestService.actualizeHelpRequestStatus(helpOffer.getHelpRequest());
+        helpOfferRepository.save(helpOffer);
+        return HelpOfferDto.fromHelpOfferEntityWithPrivateHelpRequest(helpOffer, user);
     }
+
+    @Transactional
+    public HelpOfferDto reportIncident(User reporter, Long helpOfferId, HelpIncidentReportCreationDto incidentReportCreationDto) {
+
+        // 1. Récupérer l’offre d’aide
+        HelpOffer  offer = this.findById(helpOfferId);
+
+        // 2. Vérifier l'autorisation
+        if (!offer.getHelpRequest().getRequester().getId().equals(reporter.getId())
+                && !offer.getHelper().getId().equals(reporter.getId())) {
+            throw new RuntimeException("You are not allowed to report on this offer");
+        }
+
+        // 3. Vérifier que l'utilisateur n'as pas déjà fait un signalement, 1 signalement max par user
+        for (HelpIncidentReport report : offer.getIncidentReports()){
+            if(reporter.equals(report.getReporter())){
+                throw new RuntimeException("You already have submitted an incident report");
+            }
+        }
+
+        // 4. Vérifier le statut
+        if (!offer.getStatus().equals(HelpOfferStatus.FAILED)) {
+            throw new RuntimeException("Only failed Help can be reported");
+        }
+
+        // 5. Créer le rapport d’incident
+        HelpIncidentReport report = new HelpIncidentReport();
+        report.setHelpOffer(offer);
+        report.setReporter(reporter);
+        report.setType(IncidentType.valueOf(incidentReportCreationDto.getType()));
+        report.setDescription(incidentReportCreationDto.getDescription());
+        report.setCreatedAt(LocalDateTime.now());
+
+        // 6. Mettre à jour le statut du HelpOffer
+        offer.setStatus(HelpOfferStatus.FAILED);
+        offer.addIncidentReport(report);
+        this.save(offer);
+
+        // 7. Mapper le résultat en DTO de réponse
+        return HelpOfferDto.fromHelpOfferEntityWithPrivateHelpRequest(offer, reporter);
+    }
+
 
 }

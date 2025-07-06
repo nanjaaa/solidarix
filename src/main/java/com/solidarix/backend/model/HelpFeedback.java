@@ -2,17 +2,16 @@ package com.solidarix.backend.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
-@Entity @Table(name = "help_incident_reports")
+@Entity
+@Table(name = "help_feedbacks")
+@Data
 @AllArgsConstructor @NoArgsConstructor
-@Getter @Setter
-public class HelpIncidentReport {
+public class HelpFeedback {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,18 +22,12 @@ public class HelpIncidentReport {
     private HelpOffer helpOffer;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "reporter_id")
-    private User reporter;
-
-    @Enumerated(EnumType.STRING)
-    private IncidentType type;
+    @JoinColumn(name = "author_id")
+    private User author;
 
     @Column(length = 1000)
-    private String description;
-
-    //ajouter les attachments;
+    private String feedback;
 
     private LocalDateTime createdAt;
-
-
 }
+
